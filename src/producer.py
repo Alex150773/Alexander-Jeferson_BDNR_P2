@@ -9,7 +9,6 @@ broker = RabbitBroker(RABBITMQ_URL)
 app = FastStream(broker)
 
 async def publish_corrida_finalizada(corrida_data: dict):
-    """Publica evento de corrida finalizada no RabbitMQ"""
     try:
         await broker.publish(
             corrida_data,
@@ -21,12 +20,9 @@ async def publish_corrida_finalizada(corrida_data: dict):
         print(f"❌ Erro ao publicar evento: {e}")
         return False
 
-# Se executado diretamente, teste a conexão
 if __name__ == "__main__":
-    import asyncio
     async def test():
         await broker.start()
         print("✅ Producer conectado ao RabbitMQ")
         await broker.close()
-    
     asyncio.run(test())

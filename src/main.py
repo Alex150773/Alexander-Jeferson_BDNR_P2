@@ -11,15 +11,13 @@ from src.database.mongo_client import get_db
 
 app = FastAPI(title="TransFlow API", version="1.0.0")
 
-# Conexões
 db = get_db()
 
-# ✅ CONEXÃO REDIS CORRIGIDA para a versão 4.5.4
 redis_client = redis.Redis(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", "6379")),
     db=0,
-    decode_responses=True  # Para retornar strings em vez de bytes
+    decode_responses=True
 )
 
 class Passageiro(BaseModel):
@@ -180,7 +178,6 @@ atualizarHealth();
 
 @app.post("/corridas", response_model=Corrida)
 async def criar_corrida(corrida: CorridaCreate):
-    """Cadastra uma nova corrida e publica evento"""
     try:
         corrida_dict = corrida.dict()
         corrida_dict["id_corrida"] = f"corrida_{uuid.uuid4().hex[:8]}"
@@ -199,7 +196,6 @@ async def criar_corrida(corrida: CorridaCreate):
 
 @app.get("/corridas", response_model=List[Corrida])
 async def listar_corridas():
-    """Lista todas as corridas"""
     try:
         corridas = list(db.corridas.find())
         for corrida in corridas:
@@ -210,7 +206,6 @@ async def listar_corridas():
 
 @app.get("/corridas/{forma_pagamento}", response_model=List[Corrida])
 async def filtrar_corridas_por_pagamento(forma_pagamento: str):
-    """Filtra corridas por forma de pagamento"""
     try:
         corridas = list(db.corridas.find({"forma_pagamento": forma_pagamento}))
         for corrida in corridas:
@@ -221,7 +216,6 @@ async def filtrar_corridas_por_pagamento(forma_pagamento: str):
 
 @app.get("/saldo/{motorista_nome}")
 async def consultar_saldo(motorista_nome: str):
-    """Consulta saldo do motorista no Redis"""
     try:
         saldo = redis_client.get(f"saldo:{motorista_nome}")
         if saldo is None:
@@ -233,7 +227,6 @@ async def consultar_saldo(motorista_nome: str):
 
 @app.get("/health")
 async def health_check():
-    """Health check do sistema"""
     try:
         db.client.admin.command('ping')
         mongo_status = "connected"
@@ -241,7 +234,6 @@ async def health_check():
         mongo_status = "disconnected"
 
     try:
-        # Testa conexão Redis
         redis_client.ping()
         redis_status = "connected"
     except:

@@ -6,8 +6,6 @@ from pymongo import MongoClient
 import redis
 import time
 import asyncio
-
-# Configurações (lidas do env / docker-compose)
 RABBITMQ_URL = os.getenv("RABBITMQ_URL") or (
     lambda host: f"amqp://guest:guest@{host}:5672/"
 )(os.getenv("RABBITMQ_HOST", "rabbitmq"))
@@ -18,17 +16,14 @@ REDIS_URL = os.getenv("REDIS_URL") or (
     lambda host, port: f"redis://{host}:{port}"
 )(os.getenv("REDIS_HOST", "redis"), os.getenv("REDIS_PORT", "6379"))
 
-# Broker (prefetch_count ajuda a controlar quantas mensagens o worker consome de uma vez)
 try:
     broker = RabbitBroker(RABBITMQ_URL, prefetch_count=1)
 except TypeError:
-    # fallback caso a versão do faststream não aceite prefetch_count
     broker = RabbitBroker(RABBITMQ_URL)
 
 app = FastStream(broker)
 
 def connect_with_retry(connection_func, name, max_retries=5):
-    """Tenta conectar com retry exponencial (síncrono)."""
     for attempt in range(max_retries):
         try:
             print(f"📡 Conectando ao {name}... (tentativa {attempt + 1}/{max_retries})")
@@ -42,9 +37,8 @@ def connect_with_retry(connection_func, name, max_retries=5):
                 print(f"❌ Falha ao conectar ao {name} após {max_retries} tentativas: {e}")
                 raise
 
-# Conexões (síncronas)
 mongo_client = connect_with_retry(lambda: MongoClient(MONGO_URL), "MongoDB")
-db = mongo_client.transflow  # banco/coleção usada
+db = mongo_client.transflow
 redis_client = connect_with_retry(lambda: redis.from_url(REDIS_URL, decode_responses=True), "Redis")
 
 @broker.subscriber("corridas_finalizadas")
@@ -84,7 +78,6 @@ async def processar_corrida_finalizada(corrida_data: dict):
         novo_saldo = await asyncio.to_thread(redis_update)
         print(f"💰 Saldo atualizado: {motorista_key} = {novo_saldo}")
         
-        # Atualizar documento no MongoDB (síncrono, usado via to_thread)
         def mongo_update():
             return db.corridas.update_one(
                 {"id_corrida": id_corrida},
