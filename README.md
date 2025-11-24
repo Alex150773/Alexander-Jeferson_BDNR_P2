@@ -117,7 +117,7 @@ curl http://localhost:8000/saldo/Carla
 
 Capturas de Tela
 
-![Tela do sistema](screenshot.jpeg)
+![Tela do sistema](assets/screenshot.jpeg)
 
 - Docker Compose status: `docs/prints/docker-ps.png`
 - Swagger UI: `docs/prints/api-docs.png`
